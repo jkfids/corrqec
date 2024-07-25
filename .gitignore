@@ -122,11 +122,5 @@ cython_debug/
 # Output
 output/
 
-# Data
-data/
-
-# Figures
-figures/
-
-# Misc
-misc/
+# Other junk
+to_rewrite_in_src/
