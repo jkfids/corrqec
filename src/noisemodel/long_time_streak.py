@@ -25,6 +25,15 @@ class LongTimeStreak(LongTimePair):
             
         return pair_to_qubit_map
     
+    def calc_pair_probabilities_coefficient(self) -> float:
+        """
+        Calculates the coefficient multiplier for the pair probabilities vector.
+
+        Returns:
+            float: The coefficient multiplier for the pair probabilities vector.
+        """
+        return 1.
+    
     def int_to_bool_errors(self, errors: np.ndarray) -> np.ndarray:
         """
         Converts integer errors to boolean errors at .5 probability for the streaky model.

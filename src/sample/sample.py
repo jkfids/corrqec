@@ -1,19 +1,19 @@
 # Standard library imports
 import multiprocessing
+from time import time
 
 # Third-party library imports
-import pymatching
 import numpy as np
 import stim
 
 # Local imports
 
 
-def sample_threshold(num_workers, NoiseModel, distances, probabilities, scl_noise=[], max_shots=100000, max_errors=None, batch_size=1000, **kwargs):
+def sample_threshold(num_workers, NoiseModel, model_params, distances, probabilities, scl_noise=[], max_shots=100000, max_errors=None, batch_size=1000, print_progress=False):
     physical = {d: [] for d in distances}
     logical = {d: [] for d in distances}
     
-    args_list = [(d, p, NoiseModel, scl_noise, max_shots, max_errors, batch_size, kwargs) for d in distances for p in probabilities]
+    args_list = [(d, p, NoiseModel, model_params, scl_noise, max_shots, max_errors, batch_size, print_progress) for d in distances for p in probabilities]
     
     with multiprocessing.Pool(processes=num_workers) as pool:
         results = pool.map(task_sample, args_list)
@@ -21,7 +21,7 @@ def sample_threshold(num_workers, NoiseModel, distances, probabilities, scl_nois
     for result in results:
         d, r, p, shots, errors = result['d'], result['r'], result['p'], result['shots'], result['errors']
         if errors == 0:
-            print(f"No errors for d = {d}, p = {p}")
+            # print(f"No errors for d = {d}, p = {p}")
             continue
         physical[d].append(p)
         logical[d].append([shots, errors, r])
@@ -30,13 +30,17 @@ def sample_threshold(num_workers, NoiseModel, distances, probabilities, scl_nois
     return raw_stats
 
 def task_sample(args):
-    d, p, NoiseModel, scl_noise, max_shots, max_errors, batch_size, kwargs = args
+    time0 = time()
+    d, p, NoiseModel, model_params, scl_noise, max_shots, max_errors, batch_size, print_progress = args
     r = d * 2
     scl_kwargs = {k: p for k in scl_noise}
     circuit = stim.Circuit.generated("surface_code:rotated_memory_z", rounds=r, distance=d, **scl_kwargs)
-    model = NoiseModel(p=p, **kwargs)
+    model = NoiseModel(p=p, **model_params)
     repetitions = int(max_shots / batch_size)
     shots, errors = model.sample_logical_error_rate(circuit, repetitions=repetitions, batch_size=batch_size, max_errors=max_errors, return_error_rate=False)
+    time1 = time()
+    if print_progress:
+        print(f"Sampling time (d = {d}, p = {p}): {time1 - time0:.2f}s")
     return {'d': d, 'r': r, 'p': p, 'shots': shots, 'errors': errors}
 
 # def task_sample_circuit(args):

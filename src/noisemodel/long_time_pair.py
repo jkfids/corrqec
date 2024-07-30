@@ -5,7 +5,7 @@ from .base import NoiseModel
 from .noise_model_util import get_round_pairs, get_partitioned_qubit_coords, poly_decay, exp_decay, split_circuit, get_round_pair_distances, calc_marginals
 
 class LongTimePair(NoiseModel):
-    def __init__(self, interaction_func=None, noisy_qubits=None, error_type="depolarizing"):
+    def __init__(self, interaction_func, noisy_qubits, error_type="depolarizing"):
         super().__init__()
         self.interaction_func = interaction_func
         self.noisy_qubits = noisy_qubits
@@ -156,11 +156,7 @@ class LongTimePair(NoiseModel):
         n_targets = len(targets)
         rng = np.random.default_rng()
 
-        if self.error_type == "depolarizing":
-            c = 1.06666666667
-        else:
-            c = 1
-
+        c = self.calc_pair_probabilities_coefficient()
         pair_probabilities = c * self.calc_pair_probabilities(rounds=rounds)
         pair_probabilities_matrix = np.tile(pair_probabilities, (n_targets * batch_size, 1))
 
@@ -188,6 +184,19 @@ class LongTimePair(NoiseModel):
             errors[:, targets, :] = qubit_errors
 
         return errors
+    
+    def calc_pair_probabilities_coefficient(self) -> float:
+        """
+        Calculates the coefficient multiplier for the pair probabilities vector.
+
+        Returns:
+            float: The coefficient multiplier for the pair probabilities vector.
+        """
+        if self.error_type == "depolarizing":
+            c = 16/15  # 16/15 due to Stim's convention of the two-qubit depolarizing channel excluding II errors
+        else:
+            c = 1
+        return c
 
     def calc_pair_probabilities(self, rounds: int) -> np.ndarray:
         """
@@ -334,7 +343,7 @@ class LongTimePair(NoiseModel):
         # Obtain qubit coordinates paritioned by data, syndrome Z, and syndrome X
         data, sz, sx = get_partitioned_qubit_coords(circuit) 
         
-        if self.noisy_qubits == "all" or self.noisy_qubits is None:
+        if self.noisy_qubits == "all":
             # Include all qubit coordinates
             qubit_coords = {**data, **sz, **sx}
         elif self.noisy_qubits == "data":
@@ -350,7 +359,7 @@ class LongTimePairPoly(LongTimePair):
     """
     Long-time pairwise correlated errors that decay polynomially with separation in rounds.
     """
-    def __init__(self, A, p, n, noisy_qubits=None, error_type="depolarizing"):
+    def __init__(self, A, p, n, noisy_qubits, error_type="depolarizing"):
         super().__init__(interaction_func=lambda r: poly_decay(r, self.A, self.p, self.n),
                          noisy_qubits=noisy_qubits, error_type=error_type)
         self.A = A
@@ -361,7 +370,7 @@ class LongTimePairExp(LongTimePair):
     """
     Long-time pairwise correlated errors that decay exponentially with separation in rounds.
     """
-    def __init__(self, A, p, n, noisy_qubits=None, error_type="depolarizing"): 
+    def __init__(self, A, p, n, noisy_qubits, error_type="depolarizing"): 
         super().__init__(interaction_func=lambda r: exp_decay(r, self.A, self.p, self.n),
                          noisy_qubits=noisy_qubits, error_type=error_type)
         self.A = A

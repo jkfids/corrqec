@@ -1,19 +1,16 @@
-import sys
-sys.path.append('./src')
-
 import numpy as np
-
 import stim
 
-from noisemodels import LongTimeStreakPoly
-from noisemodels import split_circuit
+from src.noisemodel import LongTimeStreakPoly
+from src.noisemodel import split_circuit
 
 p = .001
-r = 3
 d = 3
+r = 9
 
-error_type = 'depolarizing'
-# error_type = 'X'
+
+# error_type = 'depolarizing'
+error_type = 'X'
 
 model = LongTimeStreakPoly(A=1, p=p, n=2, error_type=error_type)
 
@@ -41,6 +38,8 @@ for i in range(rounds):
     mean_physical_error[i] += np.sum(np.mean(errors[i], axis=1))/len(targets)
 
 print(mean_physical_error)
+
+print(model.calc_marginals_per_round(rounds=r))
 
 # noisy_circuit = model.convert_circuit_marginalised(circuit=circuit)
 # diagram = noisy_circuit.diagram('timeline-svg')

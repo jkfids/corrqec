@@ -1,0 +1,4 @@
+python -m scripts.streak_data_poly.main
+python -m scripts.streak_data_poly.figures
+
+python -m tests.noisemodel.test_long_time_streak

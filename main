@@ -1,4 +1,0 @@
-python -m scripts.rotated_memory_z_streak_m_poly_scl
-python -m scripts.rotated_memory_z_streak_m_poly_scl_marginal
-
-python -m scripts.figures.plot_rotated_memory_z_streak_m_poly_scl

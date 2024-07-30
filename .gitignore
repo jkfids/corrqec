@@ -119,8 +119,11 @@ cython_debug/
 # JupyterLab
 .jupyterlab-debug.log
 
+# SVG files
+*.svg
+
 # Output
 output/
 
-# Other junk
+# Misc
 to_rewrite_in_src/
