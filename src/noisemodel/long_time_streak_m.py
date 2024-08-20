@@ -5,7 +5,7 @@ class LongTimeStreakM(LongTimePairM, LongTimeStreak):
     def __init__(self, interaction_func=None):
         super().__init__(interaction_func=interaction_func, noisy_qubits="syndrome", error_type='X')
         self.error_type = 'X'
-        self.split_measurements = True
+        # self.split_measurements = True
         
 class LongTimeStreakMPoly(LongTimeStreakM, LongTimeStreakPoly):
     def __init__(self, A, p, n): 
@@ -13,7 +13,7 @@ class LongTimeStreakMPoly(LongTimeStreakM, LongTimeStreakPoly):
         # Override noisy_qubits and error_type from LongTimePairM
         self.noisy_qubits = "syndrome"  # Set from LongTimePairM
         self.error_type = 'X'
-        self.split_measurements = True
+        # self.split_measurements = True
         
 class LongTimeStreakMExp(LongTimeStreakM, LongTimeStreakExp):
     def __init__(self, A, p, n): 
@@ -21,4 +21,4 @@ class LongTimeStreakMExp(LongTimeStreakM, LongTimeStreakExp):
         # Override noisy_qubits and error_type from LongTimePairM
         self.noisy_qubits = "syndrome"  # Set from LongTimePairM
         self.error_type = 'X'
-        self.split_measurements = True
+        # self.split_measurements = True

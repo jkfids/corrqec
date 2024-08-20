@@ -60,6 +60,7 @@ def plot_projection_multi(stats_list, labels, probabilities, shape, max_dist=30,
 
     for i, p in enumerate(probabilities):
         for j, (xs, ys, fits) in enumerate(zip(xs_multi, ys_multi, fits_multi)):
+            print(fits)
             x = xs[p]
             y = ys[p]
             fit = fits[p]

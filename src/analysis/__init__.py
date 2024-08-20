@@ -1,1 +1,4 @@
-from .stats import calc_per_round, process_raw_stats, collate_collected_stats, fit_stats_for_projection
+from .stats import calc_per_round, collate_collected_stats, fit_stats_for_projection, collate_stats_for_projection, convert_stats_for_projection, process_raw_stats
+from .stats import filepaths_to_data_correlated, filepaths_to_data_independent, format_data_for_plotting
+
+from .correlation_matrix import calc_tcorr_matrix

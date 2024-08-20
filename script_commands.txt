@@ -1,4 +1,9 @@
-python -m scripts.streak_data_poly.main
-python -m scripts.streak_data_poly.figures
+python -m scripts.experiment1.class0
+python -m scripts.experiment1.class1
+python -m scripts.experiment1.class2
+python -m scripts.experiment1.figures
 
-python -m tests.noisemodel.test_long_time_streak
+python -m scripts.experiment2.class1
+python -m scripts.experiment2.figures
+
+find . -type d -name "__pycache__" -exec rm -r {} +

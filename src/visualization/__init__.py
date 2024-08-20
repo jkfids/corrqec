@@ -1,1 +1,2 @@
 from .plot import plot_threshold, plot_projection_multi
+from .plot_correlation_matrix import plot_temporal_correlation_matrix

@@ -8,13 +8,15 @@ def calc_marginals_depolarizing(probabilities):
         p_vec = np.matmul(np.array([[1 - p, p / 3], [p, 1 - (p / 3)]]), p_vec)
     return p_vec[1]
 
-
 def calc_marginals(probabilities):
     t_l = np.prod(1 - (2 * np.array(probabilities)))
     return 0.5 * (1 - t_l)
 
+def calc_marginals_mixing(probabilities):
+    t = np.prod(1 - np.array(probabilities))
+    return 1 - t
 
-def split_circuit(circuit, split_measurements=False):
+def split_circuit(circuit):
     i_tick = None
     i_block = None
 
@@ -30,9 +32,9 @@ def split_circuit(circuit, split_measurements=False):
     repeat_count = circuit[i_block].repeat_count
     circuit_final = circuit[i_block + 1:]
 
-    if split_measurements is True:
-        circuit_init_round = split_circuit_measurements(circuit_init_round)
-        circuit_repeat_block = split_circuit_measurements(circuit_repeat_block)
+    # if split_measurements is True:
+    #     circuit_init_round = split_circuit_measurements(circuit_init_round)
+    #     circuit_repeat_block = split_circuit_measurements(circuit_repeat_block)
 
     return (circuit_init, circuit_init_round, circuit_repeat_block, circuit_final), repeat_count
 
@@ -44,6 +46,40 @@ def split_circuit_measurements(circuit):
             break
     return circuit[:i_split], circuit[i_split:]
 
+def split_circuit_cx(circuit):
+    circuits = []
+    i_split_prev = 0
+    for i, instr in enumerate(circuit):
+        if instr.name == 'CX':
+            i_split = i + 1
+            circuits.append(circuit[i_split_prev:i_split])
+            i_split_prev = i_split
+    circuits.append(circuit[i_split_prev:])
+            
+    return circuits
+
+def split_circuit_cx_m(circuit):
+    circuits = []
+    i_split_prev = 0
+    for i, instr in enumerate(circuit):
+        if instr.name == 'CX':
+            i_split = i + 1
+            circuits.append(circuit[i_split_prev:i_split])
+            i_split_prev = i_split
+        elif instr.name == 'MR' or instr.name == 'M':
+            i_split = i
+            circuits.append(circuit[i_split_prev:i_split])
+            i_split_prev = i_split
+    circuits.append(circuit[i_split_prev:])
+    
+    return circuits
+
+def get_control_qubits(circuit: stim.Circuit):
+    control_qubits = []
+    for instr in circuit:
+        if instr.name == 'CX':
+            control_qubits.append([q.value for q in instr.targets_copy()])
+    return control_qubits
 
 def pauli_product_prob(n):
     return 0.75 - 0.75 * np.power((-1 / 3), n)

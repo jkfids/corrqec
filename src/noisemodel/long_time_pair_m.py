@@ -1,12 +1,11 @@
 import stim
 
 from .long_time_pair import LongTimePair, LongTimePairPoly, LongTimePairExp
-from .noise_model_util import split_circuit
+from .noise_model_util import split_circuit_measurements
 
 class LongTimePairM(LongTimePair):
     def __init__(self, interaction_func=None):
         super().__init__(interaction_func=interaction_func, noisy_qubits="syndrome", error_type='X')
-        self.split_measurements = True
         
     def _sample_circuit(self, split_circuits, targets, n_qubits, rounds, batch_size):
         
@@ -37,7 +36,7 @@ class LongTimePairM(LongTimePair):
         
         output_circuit = stim.Circuit()
         
-        split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=True)
+        split_circuits, repeat_count = self.split_circuit(circuit=circuit)
         circuit_init, circuit_init_round, circuit_repeat_block, circuit_final = split_circuits
             
         qubit_coords = self.get_noisy_qubit_coords(circuit)
@@ -63,18 +62,26 @@ class LongTimePairM(LongTimePair):
         
         return output_circuit
     
+    def split_circuit(self, circuit: stim.Circuit):
+        split_circuits, repeat_count = super().split_circuit(circuit)
+        circuit_init, circuit_init_round, circuit_repeat_block, circuit_final = split_circuits
+        circuit_init_round = split_circuit_measurements(circuit_init_round)
+        circuit_repeat_block = split_circuit_measurements(circuit_repeat_block)
+        
+        return (circuit_init, circuit_init_round, circuit_repeat_block, circuit_final), repeat_count
+        
 class LongTimePairMPoly(LongTimePairM, LongTimePairPoly):
     def __init__(self, A, p, n): 
-        LongTimePairPoly.__init__(self, A, p, n)
+        LongTimePairPoly.__init__(self, A, p, n, noisy_qubits="syndrome")
         # Override noisy_qubits and error_type from LongTimePairM
         self.noisy_qubits = "syndrome"  # Set from LongTimePairM
         self.error_type = 'X'
-        self.split_measurements = True
+        # self.split_measurements = True
 
 class LongTimePairMExp(LongTimePairM, LongTimePairExp):
     def __init__(self, A, p, n): 
-        LongTimePairExp.__init__(self, A, p, n)
+        LongTimePairExp.__init__(self, A, p, n, noisy_qubits="syndrome")
         # Override noisy_qubits and error_type from LongTimePairM
         self.noisy_qubits = "syndrome"  # Set from LongTimePairM
         self.error_type = 'X'
-        self.split_measurements = True
+        # self.split_measurements = True

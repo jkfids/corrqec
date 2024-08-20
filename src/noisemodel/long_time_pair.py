@@ -2,7 +2,7 @@ import numpy as np
 import stim
 import pymatching
 from .base import NoiseModel
-from .noise_model_util import get_round_pairs, get_partitioned_qubit_coords, poly_decay, exp_decay, split_circuit, get_round_pair_distances, calc_marginals
+from .noise_model_util import get_round_pairs, get_partitioned_qubit_coords, poly_decay, exp_decay, split_circuit, get_round_pair_distances, calc_marginals, calc_marginals_depolarizing
 
 class LongTimePair(NoiseModel):
     def __init__(self, interaction_func, noisy_qubits, error_type="depolarizing"):
@@ -12,7 +12,7 @@ class LongTimePair(NoiseModel):
         self.error_type = error_type
         self.split_measurements = False
         
-    def sample_logical_error_rate(self, circuit: stim.Circuit, repetitions: int, batch_size: int, max_errors: int=None, return_error_rate: bool=True):
+    def sample_logical_error_rate(self, circuit: stim.Circuit, repetitions: int, batch_size: int, max_errors: int=None, return_error_rate: bool=True, detector_error_model=None):
         """
         Samples the logical error rate for a given Stim circuit under correlated noise.
 
@@ -30,15 +30,18 @@ class LongTimePair(NoiseModel):
         total_errors = 0
         sampled_rates = np.zeros(repetitions)
 
-        split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=self.split_measurements)
+        # split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=self.split_measurements)
+        split_circuits, repeat_count = self.split_circuit(circuit)
 
-        qubit_coords = self.get_noisy_qubit_coords(circuit)
-        targets = list(qubit_coords.keys())
+        # qubit_coords = self.get_noisy_qubit_coords(circuit)
+        # targets = list(qubit_coords.keys())
+        targets = self.get_targets(circuit)
 
         n_qubits = circuit.num_qubits  # Includes unused qubits
         rounds = repeat_count + 1
-
-        detector_error_model = self.convert_circuit_marginalised(circuit).detector_error_model()
+        
+        if detector_error_model is None:
+            detector_error_model = self.convert_circuit_marginalised(circuit).detector_error_model()
         matcher = pymatching.Matching.from_detector_error_model(detector_error_model)
 
         for i in range(repetitions):
@@ -78,9 +81,8 @@ class LongTimePair(NoiseModel):
                    - detection_events (ndarray): A 2D numpy array representing the detection events.
                    - observable_flips (ndarray): A 1D numpy array representing the observable flips.
         """
-        split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=self.split_measurements)
-        qubit_coords = self.get_noisy_qubit_coords(circuit)
-        targets = list(qubit_coords.keys())
+        split_circuits, repeat_count = self.split_circuit(circuit)
+        targets = self.get_targets(circuit)
         n_qubits = circuit.num_qubits  # Includes unused qubits in the Stim circuit
         rounds = repeat_count + 1
         return self._sample_circuit(split_circuits=split_circuits,
@@ -88,6 +90,24 @@ class LongTimePair(NoiseModel):
                                     n_qubits=n_qubits,
                                     rounds=rounds,
                                     batch_size=shots)
+        
+    def split_circuit(self, circuit: stim.Circuit) -> tuple:
+        return split_circuit(circuit)
+        
+    def get_targets(self, circuit: stim.Circuit):
+        """
+        Get the target qubits for a given Stim circuit.
+
+        Args:
+            circuit (stim.Circuit): The Stim circuit to get the target qubits for.
+
+        Returns:
+            list: A list of target qubits.
+        """
+        
+        qubit_coords = self.get_noisy_qubit_coords(circuit)
+        targets = list(qubit_coords.keys())
+        return targets
         
     def _sample_circuit(self, split_circuits: tuple, targets: list, n_qubits: int, rounds: int, batch_size: int):
         """
@@ -138,50 +158,105 @@ class LongTimePair(NoiseModel):
         observable_flips = sim.get_observable_flips().flatten()
         
         return detection_events, observable_flips
+    
+    # def sample_errors(self, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
+    #     """
+    #     Samples temporally correlated pairwise errors for a given number of rounds over a set of target qubits. Sliced 
+    #     and used as input in FlipSimulator.broadcast_pauli_errors.
 
+    #     Args:
+    #         targets (list): List of target qubits.
+    #         n_qubits (int): Number of qubits in the Stim circuit, which may not equal len(targets).
+    #         rounds (int): Number of error correction rounds.
+    #         batch_size (int): Number of parallel samples to generate.
+
+    #     Returns:
+    #         tuple: A tuple of three boolean arrays representing sampled X, Y, and Z errors respectively. Has shape (rounds, n_qubits, batch_size).
+    #     """
+    #     n_targets = len(targets)
+    #     rng = np.random.default_rng()
+
+    #     c = self.calc_pair_probabilities_coefficient()
+    #     pair_probabilities = c * self.calc_pair_probabilities(rounds=rounds)
+    #     pair_probabilities_matrix = np.tile(pair_probabilities, (n_targets * batch_size, 1))
+
+    #     rnd = rng.random(pair_probabilities_matrix.shape)
+    #     pair_errors = rnd < pair_probabilities_matrix
+
+    #     map = self.gen_pair_to_qubit_map(rounds)
+    #     qubit_errors = np.matmul(pair_errors, map).reshape(batch_size, n_targets, rounds).transpose(2, 1, 0)
+
+    #     if self.error_type == "depolarizing":
+    #         qubit_errors = qubit_errors.astype(bool)
+
+    #         random_paulis = rng.integers(0, 3, size=qubit_errors.shape, endpoint=True)
+    #         pauli_errors = np.zeros([rounds, n_qubits, batch_size], dtype=int)
+    #         pauli_errors[:, targets, :] = random_paulis * qubit_errors
+
+    #         X_errors = pauli_errors == 1
+    #         Y_errors = pauli_errors == 2
+    #         Z_errors = pauli_errors == 3
+
+    #         errors = (X_errors, Y_errors, Z_errors)
+    #     else:
+    #         qubit_errors = self.int_to_bool_errors(qubit_errors)
+    #         errors = np.zeros([rounds, n_qubits, batch_size], dtype=bool)
+    #         errors[:, targets, :] = qubit_errors
+
+    #     return errors
+    
     def sample_errors(self, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
-        """
-        Samples temporally correlated pairwise errors for a given number of rounds over a set of target qubits. Sliced 
-        and used as input in FlipSimulator.broadcast_pauli_errors.
+        error_type = self.error_type
+        return self._sample_errors(error_type=error_type, targets=targets, n_qubits=n_qubits, rounds=rounds, batch_size=batch_size)
+    
+    def _sample_errors(self, error_type: str, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
+        args = targets, n_qubits, rounds, batch_size
+        qubit_errors = self._sample_qubit_errors(error_type, *args)
 
-        Args:
-            targets (list): List of target qubits.
-            n_qubits (int): Number of qubits in the Stim circuit, which may not equal len(targets).
-            rounds (int): Number of error correction rounds.
-            batch_size (int): Number of parallel samples to generate.
+        if error_type == "depolarizing":
+            errors = self._sample_errors_depolarizing(qubit_errors, *args)
+        else:
+            errors = self._sample_errors_pauli(qubit_errors, *args)
 
-        Returns:
-            tuple: A tuple of three boolean arrays representing sampled X, Y, and Z errors respectively. Has shape (rounds, n_qubits, batch_size).
-        """
+        return errors
+    
+    def _sample_qubit_errors(self, error_type: str, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
         n_targets = len(targets)
         rng = np.random.default_rng()
-
-        c = self.calc_pair_probabilities_coefficient()
+        
+        if error_type == "depolarizing":
+            c = 16/15  # 16/15 due to Stim's convention of the two-qubit depolarizing channel excluding II errors
+        else:
+            c = 1
         pair_probabilities = c * self.calc_pair_probabilities(rounds=rounds)
         pair_probabilities_matrix = np.tile(pair_probabilities, (n_targets * batch_size, 1))
-
+        
         rnd = rng.random(pair_probabilities_matrix.shape)
         pair_errors = rnd < pair_probabilities_matrix
 
         map = self.gen_pair_to_qubit_map(rounds)
         qubit_errors = np.matmul(pair_errors, map).reshape(batch_size, n_targets, rounds).transpose(2, 1, 0)
+        
+        return qubit_errors
+    
+    def _sample_errors_depolarizing(self, qubit_errors: np.ndarray, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
+        rng = np.random.default_rng()
+        
+        qubit_errors = qubit_errors.astype(bool)
+        random_paulis = rng.integers(0, 3, size=qubit_errors.shape, endpoint=True)
+        pauli_errors = np.zeros([rounds, n_qubits, batch_size], dtype=int)
+        pauli_errors[:, targets, :] = random_paulis * qubit_errors
 
-        if self.error_type == "depolarizing":
-            qubit_errors = qubit_errors.astype(bool)
+        X_errors = pauli_errors == 1
+        Y_errors = pauli_errors == 2
+        Z_errors = pauli_errors == 3
 
-            random_paulis = rng.integers(0, 3, size=qubit_errors.shape, endpoint=True)
-            pauli_errors = np.zeros([rounds, n_qubits, batch_size], dtype=int)
-            pauli_errors[:, targets, :] = random_paulis * qubit_errors
-
-            X_errors = pauli_errors == 1
-            Y_errors = pauli_errors == 2
-            Z_errors = pauli_errors == 3
-
-            errors = (X_errors, Y_errors, Z_errors)
-        else:
-            qubit_errors = self.int_to_bool_errors(qubit_errors)
-            errors = np.zeros([rounds, n_qubits, batch_size], dtype=bool)
-            errors[:, targets, :] = qubit_errors
+        return X_errors, Y_errors, Z_errors
+        
+    def _sample_errors_pauli(self, qubit_errors: np.ndarray, targets: list, n_qubits: int, rounds: int, batch_size: int) -> tuple:
+        qubit_errors = self.int_to_bool_errors(qubit_errors)
+        errors = np.zeros([rounds, n_qubits, batch_size], dtype=bool)
+        errors[:, targets, :] = qubit_errors
 
         return errors
     
@@ -285,10 +360,11 @@ class LongTimePair(NoiseModel):
             stim.Circuit: The converted circuit with marginal errors inserted.
         """
         output_circuit = stim.Circuit()
-        split_circuits, repeat_count = split_circuit(circuit=circuit)
+        split_circuits, repeat_count = self.split_circuit(circuit=circuit)
         circuit_init, circuit_init_round, circuit_repeat_block, circuit_final = split_circuits
-        qubit_coords = self.get_noisy_qubit_coords(circuit)
-        qubits = qubit_coords.keys()
+        # qubit_coords = self.get_noisy_qubit_coords(circuit)
+        # qubits = qubit_coords.keys()
+        qubits = self.get_targets(circuit)
         rounds = repeat_count + 1
         marginals = self.calc_marginals_per_round(rounds=rounds)
         output_circuit += circuit_init
@@ -317,17 +393,43 @@ class LongTimePair(NoiseModel):
         Returns:
             np.ndarray: Array of marginal error probabilities for each round.
         """
+        # marginals = np.zeros(rounds)
+        # round_pair_distances = get_round_pair_distances(rounds=rounds)
+        # round_pair_probabilities = self.interaction_func(round_pair_distances)
+        # if self.error_type == "depolarizing":
+        #     round_pair_probabilities *= 1.06666666667
+        # for i in range(round_pair_probabilities.shape[0]):
+        #     if self.error_type == "depolarizing":
+        #         c = .75
+        #         calc_marginals_func = calc_marginals_depolarizing
+        #     else:
+        #         c = 1
+        #         calc_marginals_func = calc_marginals
+        #     p = calc_marginals_func(c*round_pair_probabilities[i, :])
+        #     marginals[i] = p
+        #     marginals[-i-1] = p
+        # # if self.error_type == "depolarizing":
+        # #     marginals *= .75
+        # return marginals
+        
+        return self._calc_marginals_per_round(rounds, self.error_type)
+    
+    def _calc_marginals_per_round(self, rounds: int, error_type: str) -> np.ndarray:
         marginals = np.zeros(rounds)
         round_pair_distances = get_round_pair_distances(rounds=rounds)
         round_pair_probabilities = self.interaction_func(round_pair_distances)
-        if self.error_type == "depolarizing":
+        if error_type == "depolarizing":
             round_pair_probabilities *= 1.06666666667
         for i in range(round_pair_probabilities.shape[0]):
-            p = calc_marginals(round_pair_probabilities[i, :])
+            if error_type == "depolarizing":
+                c = .75
+                calc_marginals_func = calc_marginals_depolarizing
+            else:
+                c = 1
+                calc_marginals_func = calc_marginals
+            p = calc_marginals_func(c*round_pair_probabilities[i, :])
             marginals[i] = p
             marginals[-i-1] = p
-        if self.error_type == "depolarizing":
-            marginals *= .75
         return marginals
 
     def get_noisy_qubit_coords(self, circuit: stim.Circuit) -> dict:

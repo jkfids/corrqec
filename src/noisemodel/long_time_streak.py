@@ -1,7 +1,7 @@
 import numpy as np
 from .long_time_pair import LongTimePair, LongTimePairExp, LongTimePairPoly
 
-from .noise_model_util import get_round_pairs, get_round_pair_distances, calc_marginals
+from .noise_model_util import get_round_pairs, get_round_pair_distances, calc_marginals, calc_marginals_depolarizing
 
 class LongTimeStreak(LongTimePair):
     def __init__(self, interaction_func=None, noisy_qubits=None, error_type="depolarizing"):
@@ -49,7 +49,7 @@ class LongTimeStreak(LongTimePair):
         random_bits = rng.integers(0, 1, size=errors.shape, endpoint=True)
         return random_bits * errors
     
-    def calc_marginals_per_round(self, rounds: int):
+    def _calc_marginals_per_round(self, rounds: int, error_type: str):
         """
         Calculate the marginal error probabilities for each round under the streaky model.
 
@@ -63,15 +63,16 @@ class LongTimeStreak(LongTimePair):
         round_pair_distances = get_round_pair_distances(rounds=rounds)
         round_pair_probabilities = self.interaction_func(round_pair_distances)
         for i in range(round_pair_probabilities.shape[0]):
-            
-            probabilities = np.concatenate([round_pair_probabilities[i, :], round_pair_probabilities[:i, i:].flatten()])  # Additional streak terms
-            p = calc_marginals(probabilities)
+            if error_type == "depolarizing":
+                c = .75
+                calc_marginals_func = calc_marginals_depolarizing
+            else:
+                c = .5
+                calc_marginals_func = calc_marginals
+            probabilities = c * np.concatenate([round_pair_probabilities[i, :], round_pair_probabilities[:i, i:].flatten()])  # Additional streak terms
+            p = calc_marginals_func(probabilities)
             marginals[i] = p
             marginals[-i-1] = p
-        if self.error_type  == "depolarizing":
-            marginals *= .75
-        else:
-            marginals *= .5
         return marginals
     
 class LongTimeStreakPoly(LongTimeStreak, LongTimePairPoly):

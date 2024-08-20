@@ -1,18 +1,19 @@
 import numpy as np
 import stim
 
-from src.noisemodel import LongTimeStreakPoly
+from src.noisemodel import LongTimeStreakPoly, LongTimePairPoly, LongTimeStreakExp, LongTimePairMPoly
 from src.noisemodel import split_circuit
 
-p = .001
+p = .1
 d = 3
-r = 9
+r = 6
 
 
 # error_type = 'depolarizing'
 error_type = 'X'
 
-model = LongTimeStreakPoly(A=1, p=p, n=2, error_type=error_type)
+NoiseModel = LongTimePairPoly
+model = NoiseModel(A=1, p=p, n=2, error_type=error_type, noisy_qubits="data")
 
 circuit = stim.Circuit.generated(
     "surface_code:rotated_memory_z",
@@ -20,7 +21,7 @@ circuit = stim.Circuit.generated(
     distance=d,
     )
 
-split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=False)
+split_circuits, repeat_count = split_circuit(circuit=circuit)
 qubit_coords = model.get_noisy_qubit_coords(circuit)
 targets = list(qubit_coords.keys())
 n_qubits = circuit.num_qubits  # Includes unused qubits in the Stim circuit
@@ -39,7 +40,16 @@ for i in range(rounds):
 
 print(mean_physical_error)
 
-print(model.calc_marginals_per_round(rounds=r))
+marginals = model.calc_marginals_per_round(rounds=r)
+
+print(marginals)
+
+div = []
+for i in range(len(mean_physical_error)):
+    div.append((mean_physical_error[i]/marginals[i]))
+    
+print(np.mean(div))
+    
 
 # noisy_circuit = model.convert_circuit_marginalised(circuit=circuit)
 # diagram = noisy_circuit.diagram('timeline-svg')

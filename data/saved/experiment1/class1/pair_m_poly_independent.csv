@@ -1,0 +1,8 @@
+     shots,    errors,  discards, seconds,decoder,strong_id,json_metadata,custom_counts
+  10000000,23626,0,41.3,pymatching,060d854b58d38569e62f641ce18d7c7d30240780dabca7a32ac92febec1c1f62,"{""d"":5,""p"":0.002,""r"":10}",
+  10000000,7216,0,127.8,pymatching,c6071d201e355e6baf010c2147ff3160f1d3aaea76ccbd74845c5fc964b66649,"{""d"":7,""p"":0.002,""r"":14}",
+  10000000,57988,0,6.75,pymatching,48303ee5846c4d95cd602a1331a986e8b1bc553573ab84c642120e098f63ff73,"{""d"":3,""p"":0.002,""r"":6}",
+  10000000,2039,0,297.4,pymatching,042000f1a097c18934e3782e6775468248d3943f542572748ba0500ae8d957c6,"{""d"":9,""p"":0.002,""r"":18}",
+  10000000,580,0,594.8,pymatching,24573029227734e3ac939be2821ae9fa5178162a68d7192aad2540248d96c927,"{""d"":11,""p"":0.002,""r"":22}",
+  10000000,148,0,1070.9,pymatching,38cf26c544ea0fd29a4f61275cb061b92c920543152e2c297ef6f69c1fc93113,"{""d"":13,""p"":0.002,""r"":26}",
+  10000000,40,0,1693.4,pymatching,5569bbc7005ecacbf56a4fd1be8c7dfab0df8b3fedbb26536b4b17b4c4870a51,"{""d"":15,""p"":0.002,""r"":30}",

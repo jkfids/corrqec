@@ -2,12 +2,45 @@
 import csv
 import os
 import re
+from typing import List
 
 # Third-party library imports
 import sinter
 
+def gen_csv_filepaths(path: str, name: str, counter: int = None) -> tuple:
+    
+    correlated = f"{path}{name}_correlated"
+    independent = f"{path}{name}_independent"
+    
+    if counter is not None:
+        correlated_csv = f"{correlated}_{counter}.csv"
+        independent_csv = f"{independent}_{counter}.csv"
+    elif counter is None:
+        i = 1
+        while os.path.exists(correlated + '.csv') or os.path.exists(independent + '.csv'):
+            correlated = f"{path}{name}_correlated_{i}"
+            independent = f"{path}{name}_independent_{i}"
+            i += 1
+        correlated_csv = f"{correlated}.csv"
+        independent_csv = f"{independent}.csv"
+    return correlated_csv, independent_csv
+        
+def gen_csv_filepath_list(path: str, name_list: List, counter: int = None) -> str:
+    
+    filepaths = [f"{path}{name}" for name in name_list]
+    
+    if counter is not None:
+        filepaths = [f"{path}{name}_{counter}.csv" for name in name_list]
+    elif counter is None:
+        i = 1
+        while any([os.path.exists(filepath + '.csv') for filepath in filepaths]):
+            filepaths = [f"{path}{name}_{i}" for name in name_list]
+            i += 1
+        filepaths = [f"{filepath}.csv" for filepath in filepaths]
+    return filepaths
+    
 
-def gen_filepath(path: str, name: str, override_counter: int=None) -> str:
+def gen_filepath(path: str, name: str, counter: int = None) -> str:
     """Generates a unique filepath by appending a counter if a collision occurs.
 
     Args:
@@ -19,9 +52,9 @@ def gen_filepath(path: str, name: str, override_counter: int=None) -> str:
     """
     filepath = os.path.join(path, name)  # Use os.path.join for platform-independent paths
     
-    if override_counter is not None:
+    if counter is not None:
         base, ext = os.path.splitext(name)
-        filepath = f"{path}{base}_{override_counter}{ext}"
+        filepath = f"{path}{base}_{counter}{ext}"
     else:
         i = 1
         while os.path.exists(filepath):
@@ -43,14 +76,14 @@ def collected_stats_to_csv(stats: sinter.TaskStats, filepath: str):
 def stats_to_csv(stats, filepath):
     with open(filepath, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["shots", "errors", "distance", "p", "rounds"])
+        writer.writerow(["shots", "errors", "distance", "rounds", "p"])
 
         physical, logical = stats
         
         distances = physical.keys()
         for d in distances:
             for p, (shots, errors, r) in zip(physical[d], logical[d]):
-                writer.writerow([shots, errors, d, p, r])
+                writer.writerow([shots, errors, d, r, p])
                 
 def stats_from_csv(filepath):
     physical = {}
@@ -62,9 +95,8 @@ def stats_from_csv(filepath):
             shots = int(row[0])
             errors = int(row[1])
             d = int(row[2])
-            p = float(row[3])
-            r = int(row[4])
-            # l = float(row[2])
+            r = int(row[3])
+            p = float(row[4])
             try:
                 physical[d].append(p)
                 logical[d].append([shots, errors, r])

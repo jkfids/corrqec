@@ -5,26 +5,58 @@ from typing import List
 import numpy as np
 import scipy
 import sinter
+from scipy.stats import norm
 
 # Local imports
+from ..util import stats_from_csv
 
+def filepaths_to_data_correlated(filepaths):
+    for filepath in filepaths:
+        stats = stats_from_csv(filepath)
+        data = convert_stats_for_projection(stats)
+        yield data
+        
+def filepaths_to_data_independent(filepaths):
+    for filepath in filepaths:
+        stats = sinter.read_stats_from_csv_files(filepath)
+        data = collate_stats_for_projection(stats)
+        yield data
+        
+def format_data_for_plotting(data):
+    
+    x = next(iter(data[0].values()))
+    per_rounds = np.array(next(iter(data[1].values())))
+    y = per_rounds[:, 0]
+    yerr = per_rounds[:, 1:].T
+    
+    return x, y, yerr
 
+def calc_per_round_ci(errors: int, shots: int, rounds: int, confidence: float = 0.95):
+    per_shot = errors / shots
+    per_round = calc_per_round(per_shot, rounds)
+    
+    # Standard error of the mean
+    se_per_shot = np.sqrt(per_shot * (1 - per_shot) / shots)
+    
+    # Z-score for 95% confidence interval
+    z_score = norm.ppf(0.975)  # 1.96
+    
+    # Calculate the upper and lower bounds of the per-shot error rate
+    me_per_shot = z_score * se_per_shot
+    per_shot_lower = per_shot - me_per_shot
+    per_shot_upper = per_shot + me_per_shot
+        
+    # Calculate the confidence interval
+    lower = per_round - calc_per_round(per_shot_lower, rounds)
+    upper = calc_per_round(per_shot_upper, rounds) - per_round
+    
+    return per_round, lower, upper
 def calc_per_round(per_shot: float, rounds: int):
     
     if per_shot >= 0.5:
          per_shot = 1 - per_shot
         
     return 0.5 * (1 - (1 - 2 * per_shot) ** (1/rounds))
-
-def process_raw_stats(raw_stats):
-    
-    physical, sample = raw_stats
-    
-    logical = {d: [calc_per_round(sample[1]/sample[0], sample[2]) for sample in samples] for d, samples in sample.items()}
-    
-    stats = physical, logical
-    
-    return stats
 
 def collate_collected_stats(collected_stats):
     distances = set()
@@ -96,8 +128,8 @@ def collate_stats_for_projection(collected_stats):
             del distances[p][i]
             continue
         
-        per_shot = stats.errors / stats.shots
-        per_round = calc_per_round(per_shot, r)
+        # per_shot = stats.errors / stats.shots
+        per_round = calc_per_round_ci(stats.errors, stats.shots, r)
         logical[p][i] = per_round
     
     return distances, logical
@@ -122,3 +154,13 @@ def convert_stats_for_projection(stats):
                 logical_dict[p] = [l]
                 
     return distance_dict, logical_dict
+
+def process_raw_stats(raw_stats):
+    
+    physical, sample = raw_stats
+    
+    logical = {d: [calc_per_round_ci(sample[1], sample[0], sample[2]) for sample in samples] for d, samples in sample.items()}
+    
+    stats = physical, logical
+    
+    return stats
