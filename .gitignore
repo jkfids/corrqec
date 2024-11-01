@@ -128,4 +128,3 @@ output/
 # Misc
 to_rewrite_in_src/
 tests/test.ipynb
-notebooks
