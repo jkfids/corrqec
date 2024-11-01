@@ -10,8 +10,8 @@ def fit_func1(x, a, b):
 def fit_func2(x, a, b):
     return a + b * x
 
-def fit_func3(x, a, b):
-    return a + b * np.log(x) ** .1
+def fit_func3(x, a, b, c):
+    return a + b * x + c * np.log(x)
 
 path = './data/saved/experiment3/'
 
@@ -35,6 +35,7 @@ colors = prop_cycle.by_key()['color'][:2]
 
 fig, axs = plt.subplots(2, 1, figsize=(5, 8))
 
+e = np.exp(1)
 for i in range(len(data_correlated)):
     ax = axs[i]
     x_corr, y_corr, yerr_corr = format_data_for_plotting(data_correlated[i])
@@ -44,13 +45,19 @@ for i in range(len(data_correlated)):
     ax.errorbar(x_indep, y_indep, yerr=yerr_indep, fmt='v', label="Independent noise model", color=colors[1])
     
     if i == 1:
-        fit_func = fit_func3
+        fit_func = fit_func1
     else:
         fit_func = fit_func2
-    popt_corr, pcov = curve_fit(fit_func, x_corr, np.log10(y_corr))
-    popt_indep, pcov = curve_fit(fit_func2, x_indep, np.log10(y_indep))
-    ax.plot(x_fit, 10**fit_func(x_fit, *popt_corr), color=colors[0], label="Correlated fit")
-    ax.plot(x_fit, 10**fit_func2(x_fit, *popt_indep), linestyle='--', color=colors[1], label="Independent fit")
+    popt_corr, pcov = curve_fit(fit_func, x_corr, np.log(y_corr))
+    popt_indep, pcov = curve_fit(fit_func2, x_indep, np.log(y_indep))
+    ax.plot(x_fit, e**fit_func(x_fit, *popt_corr), color=colors[0], label="Correlated fit")
+    ax.plot(x_fit, e**fit_func2(x_fit, *popt_indep), linestyle='--', color=colors[1], label="Independent fit")
+    # for k in range(len(x_corr)):
+    #     if x_corr[k] == 15:
+    #         print(y_corr[k], y_indep[k])
+    # print(f'A={e**popt_corr[0]:.3e}, b={popt_corr[1]:.3e}')
+    print(f'Correlated: A={e**popt_corr[0]:.2e}, b={popt_corr[1]:.2e}, d:{(np.log(1e-12) - popt_corr[0]) / popt_corr[1]}')
+    print(f'Independent: A={e**popt_indep[0]:.2e}, b={popt_indep[1]:.2e}, d:{(np.log(1e-12) - popt_indep[0]) / popt_indep[1]}')
     
     ax.semilogy()
     ax.set_xlim([0, 30])

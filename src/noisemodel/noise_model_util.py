@@ -129,7 +129,7 @@ def exp_decay(r, A, p, n):
     return A * p / (n ** r)
 
 
-def get_partitioned_qubit_coords(circuit: stim.Circuit) -> Tuple[Dict[int, List[int]], Dict[int, List[int]], Dict[int, List[int]]]:
+def get_partitioned_qubit_coords(circuit: stim.Circuit, separate_xz=False) -> Tuple:
     qubit_coords = circuit.get_final_qubit_coordinates()
     circuit = circuit.flattened()
 
@@ -147,10 +147,17 @@ def get_partitioned_qubit_coords(circuit: stim.Circuit) -> Tuple[Dict[int, List[
             break
 
     data = {q: qubit_coords[q] for q in data_qubits}
+    syndrome = {q: qubit_coords[q] for q in syndrome_qubits}
     syndromez = {q: qubit_coords[q] for q in syndromez_qubits}
     syndromex = {q: qubit_coords[q] for q in syndromex_qubits}
 
-    return data, syndromez, syndromex
+    # return data, syndromez, syndromex
+    if separate_xz is False:
+        output = data, syndrome
+    elif separate_xz is True:
+        output = data, syndromez, syndromex
+    
+    return output
 
 
 def get_detector_coords(circuit: stim.Circuit) -> List[List[Union[int, float]]]:

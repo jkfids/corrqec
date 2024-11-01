@@ -133,13 +133,16 @@ def task_sample(args):
     #     print(f"Sampling time (d = {d}, r = {r}, p = {p}, shots = {shots}): {time1 - time0:.2f}s")
     return [d, r, p, shots, errors]
 
-def sample_tcorr_matrix(NoiseModel, model_params, distance, rounds, scl_noise=None, shots=1000):
+def sample_tcorr_matrix(NoiseModel, model_params, distance, rounds, scl_noise=None, shots=1000, repetitions=1):
     if scl_noise is None:
         scl_noise = []
     scl_kwargs = {k: model_params["p"] for k in scl_noise}
     circuit = stim.Circuit.generated("surface_code:rotated_memory_z", rounds=rounds, distance=distance, **scl_kwargs)
     model = NoiseModel(**model_params)
-    detection_events, observable_flips = model.sample_circuit(circuit=circuit, shots=shots)
+    detection_events, _ = model.sample_circuit(circuit=circuit, shots=shots)
+    for i in range(repetitions - 1):
+        detection_events_i, _ = model.sample_circuit(circuit=circuit, shots=shots)
+        detection_events = np.vstack((detection_events, detection_events_i))
     tcorr_matrix = calc_tcorr_matrix(detection_events, circuit)
     return tcorr_matrix
 

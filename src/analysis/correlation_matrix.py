@@ -5,8 +5,8 @@ from src.noisemodel import get_partitioned_qubit_coords, get_detector_coords
 
 def calc_tcorr_matrix(detection_events, circuit, rotated=True):
     formatted_detection_events = format_detection_events(detection_events, circuit, rotated)
-    data, sz, sx = get_partitioned_qubit_coords(circuit)
-    n_syndrome = len(sz) + len(sx)
+    data, syndrome = get_partitioned_qubit_coords(circuit)
+    n_syndrome = len(syndrome)
     nt = int(detection_events.shape[1]/n_syndrome) - 1
     tcorr_matrix = pd.DataFrame(np.zeros((nt, nt)))
     for i in range(n_syndrome):
@@ -17,8 +17,8 @@ def calc_tcorr_matrix(detection_events, circuit, rotated=True):
 
 def format_detection_events(detection_events, circuit, rotated=True):
     
-    data, sz, sx = get_partitioned_qubit_coords(circuit)
-    n_syndrome = len(sz) + len(sx)
+    data, syndrome = get_partitioned_qubit_coords(circuit)
+    n_syndrome = len(syndrome)
     margin = int(0.5 * n_syndrome)
     
     detection_events = detection_events[:, margin:-margin]
@@ -33,7 +33,7 @@ def format_detection_events(detection_events, circuit, rotated=True):
     return formatted_detection_events
 
 def get_detector_idx_for_sorting(circuit, rotated=True):
-    data, sz, sx = get_partitioned_qubit_coords(circuit)
+    data, sz, sx = get_partitioned_qubit_coords(circuit, separate_xz=True)
     detector_coords = get_detector_coords(circuit)
     
     if rotated is True:

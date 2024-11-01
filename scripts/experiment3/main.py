@@ -4,21 +4,21 @@ from src.util import gen_csv_filepaths, print_sampling_time
 from src.sample import sample_correlated_to_file, sample_independent_to_file
 
 # Experiment parameters
-kwargs = {"num_workers": 10,
+kwargs = {"num_workers": 12,
           "model_params": {"A": 1, "n": 2},
           "distances": [3, 5, 7, 9, 11, 13, 15],
           "probabilities": [1e-3],
           "scl_noise": [],
           # "scl_noise": ["before_round_data_depolarization", "after_clifford_depolarization", "before_measure_flip_probability", "after_reset_flip_probability"],
           "max_shots": 10_000_000,
-          "print_progress": True
+          "print_progress": False
           }
 
 # Models
 
-models = [#LongTimePairAPoly,
+models = [LongTimePairAPoly,
           LongTimeStreakAPoly]
-names = [#'pair_all_poly',
+names = ['pair_all_poly',
          'streak_all_poly']
 
 path = './data/output/experiment3/'

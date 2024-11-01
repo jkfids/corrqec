@@ -3,7 +3,12 @@ python -m scripts.experiment1.class1
 python -m scripts.experiment1.class2
 python -m scripts.experiment1.figures
 
-python -m scripts.experiment2.class1
+python -m scripts.experiment2.class1_poly
+python -m scripts.experiment2.class1_exp
+python -m scripts.experiment2.class2_poly
+python -m scripts.experiment2.class2_exp
 python -m scripts.experiment2.figures
+
+python -m scripts.experiment4.main
 
 find . -type d -name "__pycache__" -exec rm -r {} +

@@ -33,6 +33,12 @@ def calc_line_fit(x, y, yerr):
     coeffs = np.polyfit(x, y, 1)
     # coeffs = Polynomial.fit(x, y, 1, domain=[3, 30]).coef
     line_fit = np.poly1d(coeffs)
+    a = coeffs[1]
+    b = coeffs[0]
+    
+    print(f"A = {e**a:.2e}, B = {b:.2e}, x(y=10e-12) = {(np.log(1e-12) - a) / b}")
+    # print(f'y = {e**(a + b * 3)}')
+    # print(f'{e**coeffs[0]:.3e}')
     
     return line_fit
 
@@ -42,7 +48,9 @@ def fit_func1(x, a, b, c):
 def fit_func2(x, a, b):
     return a + b * np.log(x)
 
-fit_func = fit_func1
+fit_func = fit_func2
+
+e = np.e
 
 paths_correlated = ["data/saved/experiment1/class0/pair_data_poly_correlated.csv",
                     "data/saved/experiment1/class0/streak_data_poly_correlated.csv",
@@ -75,15 +83,16 @@ for i in range(6):
     ax = axs[coords[i]]
     x_corr, y_corr, yerr_corr = format_data_for_plotting(data_correlated[i])
     x_indep, y_indep, yerr_indep = format_data_for_plotting(data_independent[i])
-    if i == 3:
-        print(titles[i])
-        print(y_corr, y_indep)
+    # if i == 3:
+    #     print(titles[i])
+    #     print(y_corr, y_indep)
+    print(titles[i])
+
+    line_fit_corr = calc_line_fit(x_corr, np.log(y_corr), yerr_corr)
+    line_fit_indep = calc_line_fit(x_indep, np.log(y_indep), yerr_indep)
     
-    line_fit_corr = calc_line_fit(x_corr, np.log10(y_corr), yerr_corr)
-    line_fit_indep = calc_line_fit(x_indep, np.log10(y_indep), yerr_indep)
-    popt_corr, pcov = curve_fit(fit_func, x_corr, np.log10(y_corr))
-    popt_indep, pcov = curve_fit(fit_func, x_indep, np.log10(y_indep))
-    
+    popt_corr, pcov = curve_fit(fit_func, x_corr, np.log(y_corr))
+    popt_indep, pcov = curve_fit(fit_func, x_indep, np.log(y_indep))
 
     # Get right colours.
     prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -96,11 +105,13 @@ for i in range(6):
     
     x_fit = np.linspace(3, 30, 100)
     if i not in [3, 5]:
-        ax.plot(x_fit, 10**line_fit_corr(x_fit), color=color1, label='Correlated fit')
+        ax.plot(x_fit, e**line_fit_corr(x_fit), color=color1, label='Correlated fit')
+        #print(e**line_fit_corr(3))
         # ax.plot(x_fit, 10**fit_func(x_fit, *popt_corr), color=color1, label='Correlated fit')
     else:
-        ax.plot(x_fit, 10**fit_func(x_fit, *popt_corr), color=color1, label='Correlated fit')
-    ax.plot(x_fit, 10**line_fit_indep(x_fit), linestyle='--', color=color2, label='Independent fit')
+        ax.plot(x_fit, e**fit_func(x_fit, *popt_corr), color=color1, label='Correlated fit')
+        print(f'A = {e**popt_corr[0]:.2e}, b={popt_corr[1]:.2e}, d:{(np.log(1e-12) - popt_corr[0]) / popt_corr[1]}')
+    ax.plot(x_fit, e**line_fit_indep(x_fit), linestyle='--', color=color2, label='Independent fit')
     # ax.plot(x_fit, 10**fit_func(x_fit, *popt_indep), linestyle='--', color=color2, label='Correlated fit')
     
     ax.semilogy()

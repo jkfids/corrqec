@@ -15,15 +15,19 @@ kwargs = {"num_workers": 12,
           }
 
 # Models
-models = [LongTimeStreakMPoly] * 3
+models = [LongTimeStreakMExp] * 5
 params_list = [{"A": 1, "n": 2},
+               {"A": 1, "n": 3},
+               {"A": 1, "n": 4},
                {"A": 1, "n": 5},
                {"A": 1, "n": float('inf')}]
 
 path = './data/output/experiment2/class1/'
-names = ["streak_m_poly_a1n2", 
-         "streak_m_poly_a1n5", 
-         "streak_m_poly_a1ninf"]
+names = ["streak_m_exp_a1n2", 
+         "streak_m_exp_a1n3", 
+         "streak_m_exp_a1n4", 
+         "streak_m_exp_a1n5", 
+         "streak_m_exp_a1ninf"]
 
 filepaths = gen_csv_filepath_list(path, names)
     

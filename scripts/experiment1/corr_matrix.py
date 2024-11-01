@@ -6,7 +6,7 @@ from src.sample import sample_tcorr_matrix
 from src.visualization import plot_temporal_correlation_matrix
 
 # Universal parameters
-shots = 2_000_000
+shots = 1_000_000
 d = 3
 r = 10
 A = 1

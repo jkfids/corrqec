@@ -60,9 +60,10 @@ class LongTimePairA(LongTimePair):
         return d_errors, m_errors, c_errors
         
     def get_targets(self, circuit: stim.Circuit):
-        data, sz, sx = get_partitioned_qubit_coords(circuit)
-        data_coords = data
-        syndrome_coords = {**sz, **sx}
+        # data, sz, sx = get_partitioned_qubit_coords(circuit)
+        # data_coords = data
+        # syndrome_coords = {**sz, **sx}
+        data_coords, syndrome_coords = get_partitioned_qubit_coords(circuit)
         d_targets = list(data_coords.keys())
         m_targets = list(syndrome_coords.keys())
         c_targets = get_control_qubits(circuit)

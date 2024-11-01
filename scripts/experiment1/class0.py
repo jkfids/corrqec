@@ -9,7 +9,7 @@ kwargs = {"num_workers": 12,
           "distances": [3, 5, 7, 9, 11, 13, 15],
           "probabilities": [2e-3],
           "scl_noise": ["after_clifford_depolarization", "before_measure_flip_probability", "after_reset_flip_probability"],
-          "max_shots": 10_000,
+          "max_shots": 10_000_000,
           "print_progress": True
           }
 

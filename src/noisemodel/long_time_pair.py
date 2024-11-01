@@ -30,11 +30,8 @@ class LongTimePair(NoiseModel):
         total_errors = 0
         sampled_rates = np.zeros(repetitions)
 
-        # split_circuits, repeat_count = split_circuit(circuit=circuit, split_measurements=self.split_measurements)
         split_circuits, repeat_count = self.split_circuit(circuit)
 
-        # qubit_coords = self.get_noisy_qubit_coords(circuit)
-        # targets = list(qubit_coords.keys())
         targets = self.get_targets(circuit)
 
         n_qubits = circuit.num_qubits  # Includes unused qubits
@@ -362,8 +359,7 @@ class LongTimePair(NoiseModel):
         output_circuit = stim.Circuit()
         split_circuits, repeat_count = self.split_circuit(circuit=circuit)
         circuit_init, circuit_init_round, circuit_repeat_block, circuit_final = split_circuits
-        # qubit_coords = self.get_noisy_qubit_coords(circuit)
-        # qubits = qubit_coords.keys()
+
         qubits = self.get_targets(circuit)
         rounds = repeat_count + 1
         marginals = self.calc_marginals_per_round(rounds=rounds)
@@ -442,18 +438,31 @@ class LongTimePair(NoiseModel):
         Returns:
             dict: A dictionary containing the qubit coordinates partitioned by type.
         """
+        # # Obtain qubit coordinates paritioned by data, syndrome Z, and syndrome X
+        # data, sz, sx = get_partitioned_qubit_coords(circuit) 
+        
+        # if self.noisy_qubits == "all":
+        #     # Include all qubit coordinates
+        #     qubit_coords = {**data, **sz, **sx}
+        # elif self.noisy_qubits == "data":
+        #     # Include only data qubit coordinates
+        #     qubit_coords = data
+        # elif self.noisy_qubits == "syndrome":
+        #     # Include only syndrome qubit coordinates
+        #     qubit_coords = {**sz, **sx}
+        
         # Obtain qubit coordinates paritioned by data, syndrome Z, and syndrome X
-        data, sz, sx = get_partitioned_qubit_coords(circuit) 
+        data, syndrome = get_partitioned_qubit_coords(circuit) 
         
         if self.noisy_qubits == "all":
             # Include all qubit coordinates
-            qubit_coords = {**data, **sz, **sx}
+            qubit_coords = {**data, **syndrome}
         elif self.noisy_qubits == "data":
             # Include only data qubit coordinates
             qubit_coords = data
         elif self.noisy_qubits == "syndrome":
             # Include only syndrome qubit coordinates
-            qubit_coords = {**sz, **sx}
+            qubit_coords = syndrome
 
         return qubit_coords
 

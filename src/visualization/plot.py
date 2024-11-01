@@ -19,8 +19,8 @@ def plot_threshold(collected_stats, xlim=None, ylim=None):
         stats = process_raw_stats(collected_stats)
     else: stats = collected_stats
     for d in stats[0].keys():
-        #ax.scatter(stats[1][d], stats[0][d], label=f'd={d}', linestyle='-')
-        ax.plot(stats[0][d], stats[1][d], label=f'd={d}', marker='.')
+        #ax.scatter(stats[1][d], stats[0][d], label=f'd={d}')
+        ax.plot(stats[0][d], stats[1][d], label=f'd={d}', marker='.', linestyle='')
         
     ax.loglog()
     ax.grid()
